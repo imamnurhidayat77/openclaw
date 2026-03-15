@@ -1,0 +1,159 @@
+# ============================================================
+# GitHub Actions: CI/CD Pipeline
+# ============================================================
+# Trigger: setiap push & pull request ke branch main/develop
+#
+# Pipeline stages:
+#   1. Lint     → cek kualitas kode
+#   2. Test     → jalankan automated tests
+#   3. Build    → build Docker image
+#   4. Deploy   → deploy (optional, uncomment jika siap)
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ──────────────────────────────────────────
+  # Stage 1: Lint & Format Check
+  # ──────────────────────────────────────────
+  lint:
+    name: 🔍 Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run ruff linter
+        run: python -m ruff check app/ tests/
+
+      - name: Run ruff format check
+        run: python -m ruff format --check app/ tests/
+
+      - name: Run mypy type check
+        run: python -m mypy app/ --ignore-missing-imports
+
+  # ──────────────────────────────────────────
+  # Stage 2: Test
+  # ──────────────────────────────────────────
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ -v \
+            --tb=short \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ──────────────────────────────────────────
+  # Stage 3: Build Docker Image
+  # ──────────────────────────────────────────
+  build:
+    name: 🐳 Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: openclaw-ai:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Uncomment untuk push ke Docker Hub ──
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+      #
+      # - name: Push Docker image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       ${{ secrets.DOCKERHUB_USERNAME }}/openclaw-ai:latest
+      #       ${{ secrets.DOCKERHUB_USERNAME }}/openclaw-ai:${{ github.sha }}
+
+  # ──────────────────────────────────────────
+  # Stage 4: Deploy (optional)
+  # ──────────────────────────────────────────
+  # Uncomment dan sesuaikan jika sudah punya server
+  #
+  # deploy:
+  #   name: 🚀 Deploy
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.ref == 'refs/heads/main'
+  #
+  #   steps:
+  #     - name: Deploy to server via SSH
+  #       uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USER }}
+  #         key: ${{ secrets.SERVER_SSH_KEY }}
+  #         script: |
+  #           cd /opt/openclaw-ai
+  #           git pull origin main
+  #           docker compose up -d --build
+  #           echo "✔ Deployed successfully!"

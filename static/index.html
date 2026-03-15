@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenClaw AI</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #1e293b 0%, #0f172a 45%, #020617 100%);
+        color: #e2e8f0;
+      }
+
+      .container {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .card {
+        background: #0b1220;
+        border: 1px solid #1f2937;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid #1f2937;
+        background: #0f172a;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #94a3b8;
+        font-size: 0.85rem;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: #22c55e;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+      }
+
+      #chat {
+        height: 60vh;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .row {
+        display: flex;
+        width: 100%;
+      }
+
+      .row.user {
+        justify-content: flex-end;
+      }
+
+      .row.assistant {
+        justify-content: flex-start;
+      }
+
+      .bubble {
+        max-width: min(78%, 620px);
+        border-radius: 16px;
+        padding: 10px 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .row.user .bubble {
+        background: #1d4ed8;
+        color: #eff6ff;
+        border-bottom-right-radius: 4px;
+      }
+
+      .row.assistant .bubble {
+        background: #111827;
+        color: #dcfce7;
+        border: 1px solid #1f2937;
+        border-bottom-left-radius: 4px;
+      }
+
+      .meta {
+        margin-top: 6px;
+        font-size: 0.72rem;
+        color: #94a3b8;
+      }
+
+      .typing {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .typing span {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #60a5fa;
+        animation: pulse 1s infinite ease-in-out;
+      }
+
+      .typing span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .typing span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes pulse {
+        0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px;
+        border-top: 1px solid #1f2937;
+        background: #0f172a;
+      }
+
+      textarea {
+        resize: none;
+        min-height: 46px;
+        max-height: 140px;
+        background: #020617;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 12px;
+        font: inherit;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 0 16px;
+        cursor: pointer;
+        background: #2563eb;
+        color: white;
+        font-weight: 700;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .hint {
+        margin: 0;
+        padding: 0 14px 12px;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        background: #0f172a;
+      }
+
+      @media (max-width: 680px) {
+        .container {
+          padding: 10px;
+        }
+
+        #chat {
+          height: 68vh;
+        }
+
+        .bubble {
+          max-width: 88%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <div class="header">
+          <h1>OpenClaw AI</h1>
+          <div class="status"><span class="dot"></span><span>Live chat aktif</span></div>
+        </div>
+        <div id="chat"></div>
+        <form id="form">
+          <textarea id="input" placeholder="Tulis pertanyaan... (Enter untuk kirim, Shift+Enter baris baru)" required></textarea>
+          <button id="sendButton" type="submit">Kirim</button>
+        </form>
+        <p class="hint">Default provider: Ollama lokal. Pastikan model tersedia agar jawaban muncul real-time.</p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const chat = document.getElementById('chat');
+      const sendButton = document.getElementById('sendButton');
+      const history = [];
+      let isSending = false;
+
+      appendMessage('assistant', 'Halo! Saya OpenClaw AI. Tanyakan apa saja, saya siap bantu 🚀');
+
+      function formatTime(date = new Date()) {
+        return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function scrollChatToBottom(behavior = 'smooth') {
+        chat.scrollTo({ top: chat.scrollHeight, behavior });
+      }
+
+      function appendMessage(role, text, timestamp = formatTime()) {
+        const row = document.createElement('div');
+        row.className = `row ${role}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = text;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `${role === 'user' ? 'Kamu' : 'OpenClaw AI'} • ${timestamp}`;
+
+        bubble.appendChild(meta);
+        row.appendChild(bubble);
+        chat.appendChild(row);
+        scrollChatToBottom();
+
+        return bubble;
+      }
+
+      function setSendingState(state) {
+        isSending = state;
+        sendButton.disabled = state;
+        sendButton.textContent = state ? 'Mengirim...' : 'Kirim';
+        input.disabled = state;
+      }
+
+      function autoResizeTextarea() {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+      }
+
+      function showTypingIndicator() {
+        const row = document.createElement('div');
+        row.className = 'row assistant';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+
+        const typing = document.createElement('div');
+        typing.className = 'typing';
+        typing.innerHTML = '<span></span><span></span><span></span>';
+
+        bubble.appendChild(typing);
+        row.appendChild(bubble);
+        chat.appendChild(row);
+        scrollChatToBottom();
+
+        return row;
+      }
+
+      async function typeReplyAnimation(finalText) {
+        const bubble = appendMessage('assistant', '');
+        const meta = bubble.querySelector('.meta');
+        let current = '';
+
+        for (const char of finalText) {
+          current += char;
+          bubble.textContent = current;
+          bubble.appendChild(meta);
+          scrollChatToBottom('auto');
+          await new Promise((resolve) => setTimeout(resolve, 8));
+        }
+
+        if (!finalText) {
+          bubble.textContent = '...';
+          bubble.appendChild(meta);
+        }
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (isSending) return;
+
+        const message = input.value.trim();
+        if (!message) return;
+
+        appendMessage('user', message);
+        history.push({ role: 'user', content: message });
+        input.value = '';
+        autoResizeTextarea();
+        setSendingState(true);
+
+        const typingRow = showTypingIndicator();
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, history: history.slice(0, -1) }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || 'Gagal memproses chat');
+          }
+
+          typingRow.remove();
+          await typeReplyAnimation(data.reply);
+          history.push({ role: 'assistant', content: data.reply });
+        } catch (error) {
+          typingRow.remove();
+          appendMessage('assistant', `Error: ${error.message}`);
+        } finally {
+          setSendingState(false);
+          input.focus();
+        }
+      });
+
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          form.requestSubmit();
+        }
+      });
+
+      input.addEventListener('input', autoResizeTextarea);
+      autoResizeTextarea();
+    </script>
+  </body>
+</html>

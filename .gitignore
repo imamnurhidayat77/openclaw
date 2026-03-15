@@ -1,0 +1,47 @@
+# ============================================================
+# .gitignore - OpenClaw AI
+# ============================================================
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+
+# ── Virtual Environment ──
+.venv/
+venv/
+ENV/
+
+# ── Environment Variables (RAHASIA!) ──
+.env
+.env.local
+.env.production
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Testing ──
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── Linting & Type Check ──
+.mypy_cache/
+.ruff_cache/
+
+# ── Docker ──
+docker-compose.override.yml
+
+# ── Logs ──
+*.log
+logs/
