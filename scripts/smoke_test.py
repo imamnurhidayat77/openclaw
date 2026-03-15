@@ -7,6 +7,8 @@ Usage:
     python3 scripts/smoke_test.py https://myapp.com  # custom URL
 """
 
+from __future__ import annotations
+
 import json
 import sys
 import urllib.error
