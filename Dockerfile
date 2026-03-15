@@ -26,6 +26,7 @@ FROM deps AS production
 # Copy application code
 COPY app/ ./app/
 COPY static/ ./static/
+COPY start.py ./
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos "" appuser && \
@@ -39,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import os,urllib.request; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT','8000') + '/health')" || exit 1
 
 # Run with uvicorn — Railway injects PORT env var
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["python", "start.py"]
