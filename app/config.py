@@ -21,7 +21,8 @@ class Settings(BaseModel):
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     app_host: str = os.getenv("APP_HOST", "127.0.0.1")
-    app_port: int = int(os.getenv("APP_PORT", "8000"))
+    # Railway injects PORT; fall back to APP_PORT then 8000
+    app_port: int = int(os.getenv("PORT", os.getenv("APP_PORT", "8000")))
     app_title: str = os.getenv("APP_TITLE", "OpenClaw AI")
 
     telegram_bot_enabled: bool = _env_bool("TELEGRAM_BOT_ENABLED", False)
