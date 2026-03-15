@@ -47,7 +47,15 @@ async def index() -> FileResponse:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "provider": settings.provider}
+    api_key = settings.openai_api_key
+    return {
+        "status": "ok",
+        "provider": settings.provider,
+        "api_key_set": bool(api_key),
+        "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "(empty)",
+        "base_url": settings.openai_base_url,
+        "model": settings.openai_model,
+    }
 
 
 @app.post("/api/chat", response_model=ChatResponse)
