@@ -5,7 +5,7 @@
 # Lihat semua target: make help
 # ============================================================
 
-.PHONY: help setup install run dev test lint format clean docker-build docker-up docker-down docker-logs check all
+.PHONY: help setup install run dev test lint format clean docker-build docker-up docker-down docker-logs check deploy smoke-test hooks all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -137,7 +137,51 @@ clean: ## Bersihkan file sementara
 	@echo "$(GREEN)✔ Clean!$(RESET)"
 
 # ============================================================
+# 🚀 DEPLOY (automated pipeline)
+# ============================================================
+deploy: ## Deploy: lint → test → build → start → smoke test
+	@echo "$(CYAN)═══════════════════════════════════════════$(RESET)"
+	@echo "$(CYAN)  🚀 DEPLOY PIPELINE                       $(RESET)"
+	@echo "$(CYAN)═══════════════════════════════════════════$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)[1/6] Formatting code...$(RESET)"
+	@$(MAKE) format
+	@echo ""
+	@echo "$(YELLOW)[2/6] Running linter...$(RESET)"
+	@$(MAKE) lint
+	@echo ""
+	@echo "$(YELLOW)[3/6] Running tests...$(RESET)"
+	@$(PYTHON) -m pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
+	@echo ""
+	@echo "$(YELLOW)[4/6] Building Docker image...$(RESET)"
+	@docker compose build
+	@echo ""
+	@echo "$(YELLOW)[5/6] Starting containers...$(RESET)"
+	@docker compose down 2>/dev/null || true
+	@docker compose up -d
+	@echo "$(GREEN)  ✔ Containers started$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)[6/6] Running smoke tests...$(RESET)"
+	@sleep 3
+	@$(PYTHON) scripts/smoke_test.py || { \
+		echo "$(RED)  ✗ Smoke test failed! Rolling back...$(RESET)"; \
+		docker compose down; \
+		exit 1; \
+	}
+	@echo ""
+	@echo "$(GREEN)╔══════════════════════════════════════════╗$(RESET)"
+	@echo "$(GREEN)║  ✔ Deploy Complete!                      ║$(RESET)"
+	@echo "$(GREEN)║  App: http://localhost:8000               ║$(RESET)"
+	@echo "$(GREEN)╚══════════════════════════════════════════╝$(RESET)"
+
+smoke-test: ## Jalankan smoke test pada app yang sedang running
+	@$(PYTHON) scripts/smoke_test.py $(URL)
+
+hooks: ## Install git hooks (pre-push + pre-commit)
+	@bash scripts/install-hooks.sh
+
+# ============================================================
 # 🎯 ALL-IN-ONE
 # ============================================================
-all: setup check ## Setup + jalankan semua check
+all: setup hooks check ## Setup + hooks + jalankan semua check
 	@echo "$(GREEN)🎉 Semua selesai!$(RESET)"

@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# ============================================================
+# Git pre-push hook
+# ============================================================
+# Otomatis jalankan lint + test SEBELUM push ke remote.
+# Jika test gagal, push dibatalkan.
+#
+# Install: bash scripts/install-hooks.sh
+# ============================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
+
+echo ""
+echo -e "${CYAN}╔══════════════════════════════════════════╗${RESET}"
+echo -e "${CYAN}║    🧪 Pre-Push: Automated Testing        ║${RESET}"
+echo -e "${CYAN}╚══════════════════════════════════════════╝${RESET}"
+echo ""
+
+# ── 1. Lint ──
+echo -e "${YELLOW}[1/3] Running linter...${RESET}"
+python3 -m ruff check app/ tests/ || {
+    echo -e "${RED}✗ Lint failed! Push dibatalkan.${RESET}"
+    echo -e "${YELLOW}  Fix: make format${RESET}"
+    exit 1
+}
+echo -e "${GREEN}  ✔ Lint passed${RESET}"
+
+# ── 2. Type check ──
+echo -e "${YELLOW}[2/3] Running type checker...${RESET}"
+python3 -m mypy app/ --ignore-missing-imports || {
+    echo -e "${RED}✗ Type check failed! Push dibatalkan.${RESET}"
+    exit 1
+}
+echo -e "${GREEN}  ✔ Type check passed${RESET}"
+
+# ── 3. Tests ──
+echo -e "${YELLOW}[3/3] Running tests...${RESET}"
+python3 -m pytest tests/ -v --tb=short --cov=app --cov-report=term-missing || {
+    echo -e "${RED}✗ Tests failed! Push dibatalkan.${RESET}"
+    echo -e "${YELLOW}  Fix: make test${RESET}"
+    exit 1
+}
+echo -e "${GREEN}  ✔ All tests passed${RESET}"
+
+echo ""
+echo -e "${GREEN}✔ Pre-push checks passed. Pushing...${RESET}"
+echo ""
