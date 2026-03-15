@@ -64,7 +64,7 @@ async def _chat_ollama(message: str, history: list[dict[str, str]]) -> str:
         raise ProviderError(f"Ollama error {response.status_code}: {response.text}")
 
     data = response.json()
-    reply = data.get("message", {}).get("content", "")
+    reply: str = data.get("message", {}).get("content", "")
 
     if not reply:
         raise ProviderError("Respons Ollama kosong")
@@ -77,7 +77,7 @@ async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -
         raise ProviderError("OPENAI_API_KEY belum diset")
 
     payload_messages = [*history, {"role": "user", "content": message}]
-    payload = {
+    payload: dict[str, object] = {
         "model": settings.openai_model,
         "messages": payload_messages,
     }
@@ -110,7 +110,7 @@ async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -
     if not choices:
         raise ProviderError("Respons model tidak punya choices")
 
-    reply = choices[0].get("message", {}).get("content", "")
+    reply: str = choices[0].get("message", {}).get("content", "")
     if not reply:
         raise ProviderError("Respons model kosong")
 

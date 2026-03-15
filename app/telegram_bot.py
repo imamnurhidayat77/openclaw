@@ -37,7 +37,8 @@ async def _get_updates(offset: int | None) -> list[dict[str, Any]]:
     if not data.get("ok"):
         raise TelegramBotError(f"getUpdates error: {data}")
 
-    return data.get("result", [])
+    result: list[dict[str, Any]] = data.get("result", [])
+    return result
 
 
 async def _send_message(chat_id: int, text: str) -> None:
