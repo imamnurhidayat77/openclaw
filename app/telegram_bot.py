@@ -15,7 +15,7 @@ class TelegramBotError(Exception):
 
 def _telegram_api_url(method: str) -> str:
     if not settings.telegram_bot_token:
-        raise TelegramBotError("TELEGRAM_BOT_TOKEN belum diset")
+        raise TelegramBotError("TELEGRAM_BOT_TOKEN is not set")
     return f"https://api.telegram.org/bot{settings.telegram_bot_token}/{method}"
 
 

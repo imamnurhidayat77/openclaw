@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Literal
 
@@ -9,6 +10,27 @@ from pydantic import BaseModel, Field
 
 from .config import settings
 from .providers import ProviderError, chat_with_provider
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start Telegram bot polling on startup if enabled."""
+    import asyncio
+
+    bot_task = None
+    if settings.telegram_bot_enabled and settings.telegram_bot_token:
+        from .telegram_bot import run_telegram_bot
+
+        bot_task = asyncio.create_task(run_telegram_bot())
+        print("[app] Telegram bot started")
+
+    yield
+
+    if bot_task:
+        bot_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await bot_task
+        print("[app] Telegram bot stopped")
 
 
 class Message(BaseModel):
@@ -25,7 +47,7 @@ class ChatResponse(BaseModel):
     reply: str
 
 
-app = FastAPI(title=settings.app_title)
+app = FastAPI(title=settings.app_title, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
