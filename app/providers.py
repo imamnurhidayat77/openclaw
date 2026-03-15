@@ -14,62 +14,10 @@ class ProviderError(Exception):
 async def chat_with_provider(message: str, history: list[dict[str, str]]) -> str:
     provider = settings.provider
 
-    if provider == "ollama":
-        try:
-            return await _chat_ollama(message, history)
-        except ProviderError as error:
-            if _should_fallback_to_openai():
-                try:
-                    return await _chat_openai_compatible(message, history)
-                except ProviderError as fallback_error:
-                    raise ProviderError(
-                        f"Ollama gagal: {error} | Fallback OpenAI gagal: {fallback_error}"
-                    ) from fallback_error
-            raise
     if provider == "openai":
         return await _chat_openai_compatible(message, history)
 
     raise ProviderError(f"Provider tidak didukung: {provider}")
-
-
-def _should_fallback_to_openai() -> bool:
-    return (
-        settings.fallback_to_openai_on_ollama_error
-        and bool(settings.openai_api_key)
-        and bool(settings.openai_base_url)
-        and bool(settings.openai_model)
-    )
-
-
-async def _chat_ollama(message: str, history: list[dict[str, str]]) -> str:
-    payload_messages = [*history, {"role": "user", "content": message}]
-    payload = {
-        "model": settings.ollama_model,
-        "messages": payload_messages,
-        "stream": False,
-    }
-
-    url = f"{settings.ollama_base_url.rstrip('/')}/api/chat"
-
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, json=payload)
-    except httpx.RequestError as error:
-        raise ProviderError(
-            f"Gagal terhubung ke Ollama di {settings.ollama_base_url}. "
-            "Pastikan Ollama berjalan dan model sudah di-pull."
-        ) from error
-
-    if response.status_code != 200:
-        raise ProviderError(f"Ollama error {response.status_code}: {response.text}")
-
-    data = response.json()
-    reply: str = data.get("message", {}).get("content", "")
-
-    if not reply:
-        raise ProviderError("Respons Ollama kosong")
-
-    return reply
 
 
 async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -> str:

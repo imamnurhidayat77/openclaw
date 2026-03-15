@@ -4,70 +4,14 @@ Tests untuk provider module.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
 from app.providers import (
     ProviderError,
-    _chat_ollama,
     _chat_openai_compatible,
     _retry_wait_seconds,
     chat_with_provider,
 )
-
-
-# ════════════════════════════════════════════
-# _chat_ollama
-# ════════════════════════════════════════════
-@pytest.mark.anyio
-async def test_chat_ollama_success():
-    """Ollama should return reply from response."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"message": {"content": "Hello from Ollama!"}}
-
-    with patch("app.providers.httpx.AsyncClient") as mock_client_cls:
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
-
-        result = await _chat_ollama("hi", [])
-
-    assert result == "Hello from Ollama!"
-
-
-@pytest.mark.anyio
-async def test_chat_ollama_connection_error():
-    """Ollama connection error should raise ProviderError."""
-    with patch("app.providers.httpx.AsyncClient") as mock_client_cls:
-        mock_client = AsyncMock()
-        mock_client.post.side_effect = httpx.RequestError("connection refused")
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
-
-        with pytest.raises(ProviderError, match="Gagal terhubung ke Ollama"):
-            await _chat_ollama("hi", [])
-
-
-@pytest.mark.anyio
-async def test_chat_ollama_empty_response():
-    """Empty Ollama response should raise ProviderError."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"message": {"content": ""}}
-
-    with patch("app.providers.httpx.AsyncClient") as mock_client_cls:
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
-
-        with pytest.raises(ProviderError, match="kosong"):
-            await _chat_ollama("hi", [])
 
 
 # ════════════════════════════════════════════
