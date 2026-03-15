@@ -1,5 +1,5 @@
 """
-Tests untuk provider module.
+Tests for provider module.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -75,5 +75,5 @@ async def test_unsupported_provider():
     with patch("app.providers.settings") as mock_settings:
         mock_settings.provider = "unknown_provider"
 
-        with pytest.raises(ProviderError, match="tidak didukung"):
+        with pytest.raises(ProviderError, match="Unsupported provider"):
             await chat_with_provider("hi", [])

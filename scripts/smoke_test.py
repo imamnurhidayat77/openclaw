@@ -1,6 +1,6 @@
 """
 Post-deploy smoke tests.
-Verifikasi bahwa app berjalan dengan benar setelah deploy.
+Verify that the app is running correctly after deployment.
 
 Usage:
     python3 scripts/smoke_test.py                    # default localhost:8000
@@ -132,10 +132,10 @@ def main():
     print()
 
     if failed > 0:
-        print(f"{RED}✗ Smoke tests failed! Deploy mungkin bermasalah.{RESET}")
+        print(f"{RED}✗ Smoke tests failed! Deployment may have issues.{RESET}")
         sys.exit(1)
     else:
-        print(f"{GREEN}✔ All smoke tests passed! App berjalan normal.{RESET}")
+        print(f"{GREEN}✔ All smoke tests passed! App is running normally.{RESET}")
 
 
 if __name__ == "__main__":

@@ -17,12 +17,12 @@ async def chat_with_provider(message: str, history: list[dict[str, str]]) -> str
     if provider == "openai":
         return await _chat_openai_compatible(message, history)
 
-    raise ProviderError(f"Provider tidak didukung: {provider}")
+    raise ProviderError(f"Unsupported provider: {provider}")
 
 
 async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -> str:
     if not settings.openai_api_key:
-        raise ProviderError("OPENAI_API_KEY belum diset")
+        raise ProviderError("OPENAI_API_KEY is not set")
 
     payload_messages = [*history, {"role": "user", "content": message}]
     payload: dict[str, object] = {
@@ -46,8 +46,8 @@ async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -
             )
     except httpx.RequestError as error:
         raise ProviderError(
-            "Gagal terhubung ke endpoint OpenAI-compatible. "
-            "Cek OPENAI_BASE_URL dan koneksi internet."
+            "Failed to connect to OpenAI-compatible endpoint. "
+            "Check OPENAI_BASE_URL and your internet connection."
         ) from error
 
     if response.status_code != 200:
@@ -56,11 +56,11 @@ async def _chat_openai_compatible(message: str, history: list[dict[str, str]]) -
     data = response.json()
     choices = data.get("choices", [])
     if not choices:
-        raise ProviderError("Respons model tidak punya choices")
+        raise ProviderError("Model response has no choices")
 
     reply: str = choices[0].get("message", {}).get("content", "")
     if not reply:
-        raise ProviderError("Respons model kosong")
+        raise ProviderError("Model response is empty")
 
     return reply
 
@@ -85,8 +85,8 @@ async def _post_openai_with_retry(
         await asyncio.sleep(wait_seconds)
 
     raise ProviderError(
-        "OpenAI-compatible error 429: terlalu banyak request. "
-        "Coba lagi beberapa saat, kurangi frekuensi chat, atau gunakan provider lain sementara."
+        "OpenAI-compatible error 429: too many requests. "
+        "Please try again later, reduce chat frequency, or switch to another provider temporarily."
     )
 
 

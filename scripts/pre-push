@@ -3,7 +3,7 @@
 # Git pre-push hook
 # ============================================================
 # Otomatis jalankan lint + test SEBELUM push ke remote.
-# Jika test gagal, push dibatalkan.
+# If tests fail, push is aborted.
 #
 # Install: bash scripts/install-hooks.sh
 # ============================================================

@@ -31,7 +31,7 @@ async def _get_updates(offset: int | None) -> list[dict[str, Any]]:
         response = await client.post(_telegram_api_url("getUpdates"), json=payload)
 
     if response.status_code != 200:
-        raise TelegramBotError(f"getUpdates gagal {response.status_code}: {response.text}")
+        raise TelegramBotError(f"getUpdates failed {response.status_code}: {response.text}")
 
     data = response.json()
     if not data.get("ok"):
@@ -51,7 +51,7 @@ async def _send_message(chat_id: int, text: str) -> None:
         response = await client.post(_telegram_api_url("sendMessage"), json=payload)
 
     if response.status_code != 200:
-        raise TelegramBotError(f"sendMessage gagal {response.status_code}: {response.text}")
+        raise TelegramBotError(f"sendMessage failed {response.status_code}: {response.text}")
 
 
 def _extract_user_message(update: dict[str, Any]) -> tuple[int, str] | None:
@@ -71,11 +71,11 @@ def _extract_user_message(update: dict[str, Any]) -> tuple[int, str] | None:
 
 async def _handle_message(chat_id: int, text: str) -> None:
     if text == "/start":
-        await _send_message(chat_id, "OpenClaw AI aktif. Kirim pesan apa saja untuk mulai chat.")
+        await _send_message(chat_id, "OpenClaw AI is active. Send any message to start chatting.")
         return
 
     if text == "/help":
-        await _send_message(chat_id, "Perintah: /start, /help. Selain itu langsung chat biasa.")
+        await _send_message(chat_id, "Commands: /start, /help. Otherwise, just chat directly.")
         return
 
     try:
@@ -90,12 +90,10 @@ async def _handle_message(chat_id: int, text: str) -> None:
 
 async def run_telegram_bot() -> None:
     if not settings.telegram_bot_enabled:
-        raise TelegramBotError(
-            "Telegram bot belum aktif. Set TELEGRAM_BOT_ENABLED=true di file .env"
-        )
+        raise TelegramBotError("Telegram bot is not enabled. Set TELEGRAM_BOT_ENABLED=true in .env")
 
     if not settings.telegram_bot_token:
-        raise TelegramBotError("TELEGRAM_BOT_TOKEN belum diset")
+        raise TelegramBotError("TELEGRAM_BOT_TOKEN is not set")
 
     offset: int | None = None
     print("[telegram] bot polling started")

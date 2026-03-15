@@ -1,5 +1,5 @@
 """
-Tests untuk FastAPI endpoints.
+Tests for FastAPI endpoints.
 """
 
 import pytest

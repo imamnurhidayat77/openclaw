@@ -1,5 +1,5 @@
 """
-Tests untuk config module.
+Tests for config module.
 """
 
 import os

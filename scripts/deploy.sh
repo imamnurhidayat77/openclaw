@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# deploy.sh - Deploy otomatis ke server
+# deploy.sh - Automated deployment script
 # ============================================================
 # Usage: bash scripts/deploy.sh [production|staging]
 #
@@ -11,7 +11,7 @@
 #   4. Start new containers
 #   5. Health check
 #   6. Smoke tests (API verification)
-#   7. Auto-rollback jika gagal
+#   7. Auto-rollback on failure
 # ============================================================
 
 set -euo pipefail
@@ -73,9 +73,9 @@ echo -e "${GREEN}  ✔ All tests passed${RESET}"
 # ── 3. Git status check ──
 echo -e "${YELLOW}[3/7] Checking git status...${RESET}"
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
-    echo -e "  ${YELLOW}⚠ Ada perubahan yang belum di-commit:${RESET}"
+    echo -e "  ${YELLOW}⚠ Uncommitted changes detected:${RESET}"
     git status --short
-    echo -e "  ${YELLOW}  Deploy tetap lanjut, tapi sebaiknya commit dulu.${RESET}"
+    echo -e "  ${YELLOW}  Proceeding with deploy, but consider committing first.${RESET}"
 fi
 GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 echo -e "  ${GREEN}✔ Deploying commit: $GIT_HASH${RESET}"
@@ -111,7 +111,7 @@ until curl -sf http://localhost:8000/health > /dev/null 2>&1; do
         echo -e "${RED}  ✗ Health check failed after $MAX_RETRIES attempts${RESET}"
         echo -e "${YELLOW}  Rolling back...${RESET}"
         docker compose down
-        echo -e "${RED}  Deploy dibatalkan. Cek logs: docker compose logs${RESET}"
+        echo -e "${RED}  Deploy cancelled. Check logs: docker compose logs${RESET}"
         exit 1
     fi
     echo -e "  ${YELLOW}Waiting for app to start... ($RETRY_COUNT/$MAX_RETRIES)${RESET}"

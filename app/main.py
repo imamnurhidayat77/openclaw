@@ -47,21 +47,7 @@ async def index() -> FileResponse:
 
 @app.get("/health")
 async def health() -> dict:
-    import os
-
-    api_key = settings.openai_api_key
-    raw_key = os.environ.get("OPENAI_API_KEY", "")
-    return {
-        "status": "ok",
-        "provider": settings.provider,
-        "api_key_set": bool(api_key),
-        "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "(empty)",
-        "raw_key_set": bool(raw_key),
-        "base_url": settings.openai_base_url,
-        "model": settings.openai_model,
-        "env_vars_with_open": [k for k in os.environ if "OPEN" in k.upper()],
-        "env_vars_with_app": [k for k in os.environ if "APP" in k.upper()],
-    }
+    return {"status": "ok", "provider": settings.provider}
 
 
 @app.post("/api/chat", response_model=ChatResponse)
